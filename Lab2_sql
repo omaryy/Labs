@@ -1,0 +1,144 @@
+Drop schema if exists Library;
+ Create Schema Library;
+ use Library;
+ 
+create table BOOK(
+Book_id char(20) not null,
+Title varchar(30) not null,
+Publisher_name varchar(30),
+primary key (Book_id)
+);
+
+create table BOOK_AUTHORS(
+Book_id char(20) not null,
+Author_name varchar(30) not null,
+primary key (Book_id,Author_name)
+);
+
+create table PUBLISHER(
+Name varchar(30) not null,
+Address varchar(50) not null,
+Phone char(11),
+primary key(Name)
+);
+
+create table BOOK_COPIES(
+Book_id char(20) not null,
+Branch_id integer not null,
+No_of_copies integer not null default 0,
+primary key(Book_id,Branch_id)
+);
+
+CREATE TABLE BOOK_LOANS ( 
+Book_id CHAR(20) NOT NULL,
+Branch_id INTEGER NOT NULL,
+Card_no INTEGER NOT NULL,
+Date_out datetime  NOT NULL,
+Due_date datetime  NOT NULL,
+PRIMARY KEY (Card_no, Book_id, Branch_id) );
+    
+CREATE TABLE LIBRARY_BRANCH (
+Branch_id INTEGER NOT NULL,
+Branch_name VARCHAR(20) NOT NULL,
+Address VARCHAR(50) NOT NULL,
+PRIMARY KEY (Branch_id) );
+
+CREATE TABLE BORROWER (
+Card_no INTEGER NOT NULL,
+Name VARCHAR(100) NOT NULL,
+Address VARCHAR(50) NOT NULL,
+Phone CHAR(11),
+PRIMARY KEY (Card_no) );
+
+alter table BOOK add  FOREIGN KEY (Publisher_name) REFERENCES publisher (Name) ON UPDATE CASCADE; 
+
+alter table BOOK_AUTHORS add foreign key(Book_id) references BOOK(Book_id) on update cascade on delete cascade;
+
+alter table BOOK_COPIES add foreign key(Book_id) references BOOK(Book_id) on update cascade on delete cascade;
+alter table BOOK_COPIES add foreign key(Branch_id) references LIBRARY_BRANCH(Branch_id) on update cascade on delete cascade ;
+
+alter table BOOK_LOANS add FOREIGN KEY (Card_no) REFERENCES BORROWER (Card_no) ON DELETE CASCADE ON UPDATE CASCADE;
+alter table BOOK_LOANS add FOREIGN KEY (Branch_id) REFERENCES LIBRARY_BRANCH (Branch_id) ON DELETE CASCADE ON UPDATE CASCADE;
+alter table BOOK_LOANS add FOREIGN KEY (Book_id) REFERENCES BOOK (Book_id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+insert into PUBLISHER values('eslam','alexandria','01149425681');
+insert into BOOK values('aabc5','white wheel','eslam');
+-- can upate easily because we made on update cascade
+update publisher set name='omar' where name='eslam';
+-- can not delete because the foreign key constraint
+-- delete from publisher where name='omar';
+
+insert into PUBLISHER values('ahmed','alexandria','01149425681');
+insert into PUBLISHER values('mohamed','alexandria','01149425681');
+insert into PUBLISHER values('amr','alexandria','01149425681');
+
+
+
+INSERT INTO LIBRARY_BRANCH VALUES(1,'Sharpstown','alex');
+INSERT INTO LIBRARY_BRANCH VALUES(2,'Central','mansoura');
+INSERT INTO LIBRARY_BRANCH VALUES(3,'genders','damanhour');
+
+INSERT INTO BORROWER VALUES(0001,'omar', 'victoria','01149425681');
+INSERT INTO BORROWER VALUES(0002,'ahmed', 'sharkia','01149425681');
+INSERT INTO BORROWER VALUES(0003,'zaki', 'behira','01149425681');
+INSERT INTO BORROWER VALUES(0004,'mohamed', 'damnhour','01149425681');
+INSERT INTO BORROWER VALUES(0005,'abdo', 'zakazik','01149425681');
+INSERT INTO BORROWER VALUES(0006,'essam', 'damnhour','01149425681');
+
+INSERT INTO BOOK VALUES('b01','The Lost Tribe','omar');
+INSERT INTO BOOK VALUES('b02','the brothers','ahmed');
+INSERT INTO BOOK VALUES('b03','me and you','mohamed');
+INSERT INTO BOOK VALUES('b04','us','amr');
+INSERT INTO BOOK VALUES('b05','torab elmas','omar');
+
+INSERT INTO BOOK_AUTHORS VALUES('b01','Stephen King');
+INSERT INTO BOOK_AUTHORS VALUES('b02','pirlo');
+INSERT INTO BOOK_AUTHORS VALUES('b03','distoveski');
+INSERT INTO BOOK_AUTHORS VALUES('b04','Stephen King');
+INSERT INTO BOOK_AUTHORS VALUES('b05','ahmed');
+
+
+INSERT INTO BOOK_COPIES VALUES('b01',1,2);
+INSERT INTO BOOK_COPIES VALUES('b02',2,1);
+INSERT INTO BOOK_COPIES VALUES('b03',3,3);
+INSERT INTO BOOK_COPIES VALUES('b04',1,4);
+INSERT INTO BOOK_COPIES VALUES('b05',2,8);
+INSERT INTO BOOK_COPIES VALUES('b01',2,10);
+INSERT INTO BOOK_COPIES VALUES('b02',3,9);
+INSERT INTO BOOK_COPIES VALUES('b03',1,7);
+INSERT INTO BOOK_COPIES VALUES('b04',2,8);
+INSERT INTO BOOK_COPIES VALUES('b05',1,2);
+
+INSERT INTO BOOK_LOANS VALUES('b05',1,0001,NOW()-INTERVAL 1 DAY,NOW()+INTERVAL 7 DAY);
+INSERT INTO BOOK_LOANS VALUES('b01',2,0002,NOW()-INTERVAL 2 DAY,NOW()+INTERVAL 6 DAY);
+INSERT INTO BOOK_LOANS VALUES('b02',2,0002,NOW()-INTERVAL 2 DAY,NOW()+INTERVAL 6 DAY);
+INSERT INTO BOOK_LOANS VALUES('b01',3,0002,NOW()-INTERVAL 2 DAY,NOW()+INTERVAL 6 DAY);
+INSERT INTO BOOK_LOANS VALUES('b02',3,0003,NOW()-INTERVAL 7 DAY,NOW());
+INSERT INTO BOOK_LOANS VALUES('b05',3,0006,NOW()-INTERVAL 1 DAY,NOW()+INTERVAL 7 DAY);
+
+-- a
+SELECT No_of_copies FROM BOOK_COPIES 
+WHERE
+BOOK_COPIES.Branch_id IN (SELECT Branch_id FROM library_branch WHERE Branch_name = "Sharpstown")
+AND
+BOOK_COPIES.Book_id IN (SELECT Book_id FROM BOOK WHERE Title = "The Lost Tribe");
+
+-- c
+SELECT BORROWER.Name FROM BORROWER 
+WHERE(
+BORROWER.Card_no 
+NOT IN( SELECT Card_no FROM BOOK_LOANS)
+);
+
+-- e
+SELECT BRANCH_NAME, COUNT(*) FROM 
+(LIBRARY_BRANCH JOIN BOOK_LOANS ON LIBRARY_BRANCH.Branch_id = BOOK_LOANS.Branch_id)
+GROUP BY Branch_name;
+
+-- g
+SELECT Title, No_of_copies FROM 
+(BOOK_AUTHORS JOIN BOOK ON BOOK.Book_id = BOOK_AUTHORS.Book_id 
+INNER JOIN BOOK_COPIES ON BOOK.Book_id = BOOK_COPIES.Book_id)
+WHERE AUTHOR_NAME = "Stephen King" 
+AND Branch_id IN (SELECT Branch_id FROM Library_branch WHERE Branch_name = "Central");
+    
